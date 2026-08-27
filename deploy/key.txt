@@ -1,0 +1,2 @@
+DEPLOYMENT_LOGIN = usu-orientation-production
+DEPLOYMENT_PWD = 7N4Q2M9X1K6R8P3
