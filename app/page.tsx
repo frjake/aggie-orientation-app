@@ -237,7 +237,7 @@ export default function Home() {
           <p>Every great orientation story starts with a single share. Post it, tag it, and let your friends and family know that your Aggie journey is officially underway.</p>
         </div>
         {/* The share card renders at full resolution so it always looks crisp. */}
-        <img className="og-showcase-image" src="/og.png" />
+        <img className="og-showcase-image" src="og.png" />
       </section>
 
       {/* ================================================================= */}
@@ -302,7 +302,7 @@ export default function Home() {
       <section className="community-band">
         <div className="community-photo">
           {/* An authentic candid captured during last year's orientation week. */}
-          <img className="community-photo-image" src="/aggie-community.png" />
+          <img className="community-photo-image" src="aggie-community.png" />
           <span className="community-photo-tag">ORIENTATION WEEK &middot; LOGAN CAMPUS</span>
         </div>
         <div className="community-copy">

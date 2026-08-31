@@ -2,6 +2,11 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
+const siteUrl =
+  process.env.SITE_URL ??
+  'https://nritschel.github.io/aggie-orientation-app';
+const socialPreviewUrl = `${siteUrl.replace(/\/$/, '')}/og.png`;
+
 /**
  * ============================================================================
  * ROOT LAYOUT
@@ -31,20 +36,20 @@ const geistMono = Geist_Mono({
  * card surfaces. Getting this right is crucial for organic discoverability.
  */
 export const metadata: Metadata = {
-  metadataBase: new URL('https://aggie-launch-orientation-demo.nritschel.chatgpt.site'),
+  metadataBase: new URL(siteUrl),
   title: 'USU Orientation Week | Logan Campus',
   description: 'Find orientation events, explore the Logan campus, and chat with an A-Team mentor.',
   openGraph: {
     title: 'USU Orientation Week',
     description: 'Your first week starts here.',
     type: 'website',
-    images: [{ url: '/og.png', width: 1200, height: 630, alt: 'Aggie Launch orientation week demo' }],
+    images: [{ url: socialPreviewUrl, width: 1200, height: 630, alt: 'Aggie Launch orientation week demo' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'USU Orientation Week',
     description: 'Your first week starts here.',
-    images: ['/og.png'],
+    images: [socialPreviewUrl],
   },
 };
 
