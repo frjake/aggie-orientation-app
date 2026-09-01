@@ -3,154 +3,109 @@
 import clsx from 'clsx';
 import dayjs from 'dayjs';
 import { Send, ShieldCheck } from 'lucide-react';
-import { FormEvent, useEffect, useRef, useState } from 'react';
-import {
-  LEGACY_MAXIMUM_CHARACTER_COUNT,
-  sanitizeMessageBodyForRichPresentation,
-  type ChatSender,
-} from '../lib/chat-contract';
-import { useChatExperienceStore } from '../lib/chat-store';
-
-/**
- * ============================================================================
- * ORIENTATION CHAT EXPERIENCE COMPONENT
- * ============================================================================
- *
- * A vibrant, fully responsive, real-time conversation surface that seamlessly
- * connects incoming Aggies with their A-Team mentors. This component is the
- * cornerstone of the mentorship experience and plays a crucial role in helping
- * students feel supported from day one.
- *
- * Design principle: the interface should always feel calm and confident. We
- * deliberately avoid surfacing transport level plumbing to the end user, since
- * connection warnings create anxiety and hurt engagement metrics.
- * ============================================================================
- */
+import { FormEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { MAX_MESSAGE_LENGTH, summarizeConversations, type ChatSender } from '../lib/chat-contract';
+import { useChatStore } from '../lib/chat-store';
 
 type OrientationChatProps = {
   sender: ChatSender;
   compact?: boolean;
 };
 
-/** How long, in milliseconds, we wait before auto scrolling the transcript. */
-const SCROLL_SETTLE_DELAY = 50;
+const STATUS_LABEL = {
+  connected: 'Live connection',
+  connecting: 'Connecting…',
+  disconnected: 'Offline',
+} as const;
 
 export function OrientationChat({ sender, compact = false }: OrientationChatProps) {
-  // The current value of the compose box.
   const [draft, setDraft] = useState('');
 
-  // A locally mirrored copy of the transcript so rendering stays snappy.
-  const [renderedMessages, setRenderedMessages] = useState<any[]>([]);
+  const allMessages = useChatStore((state) => state.messages);
+  const activeConversationId = useChatStore((state) => state.activeConversationId);
+  const isSending = useChatStore((state) => state.isSending);
+  const status = useChatStore((state) => state.status);
+  const error = useChatStore((state) => state.error);
+  const connect = useChatStore((state) => state.connect);
+  const disconnect = useChatStore((state) => state.disconnect);
+  const reconnect = useChatStore((state) => state.reconnect);
+  const sendMessage = useChatStore((state) => state.sendMessage);
 
-  // Pull everything we need out of the centralized engagement command center.
-  const messages = useChatExperienceStore((state) => state.messages);
-  const isSending = useChatExperienceStore((state) => state.isSending);
-  const connect = useChatExperienceStore((state) => state.activateTheRealtimeMentorBridge);
-  const disconnect = useChatExperienceStore((state) => state.deactivateTheRealtimeMentorBridge);
-  const send = useChatExperienceStore((state) => state.dispatchMessageThroughTheEngagementPipeline);
-
-  // A ref pointing at the scrollable message viewport.
   const messageViewport = useRef<HTMLDivElement>(null);
 
-  /**
-   * Establish the realtime bridge on mount and tear it down on unmount.
-   */
   useEffect(() => {
-    connect();
+    connect(sender);
     return disconnect;
-  }, [connect, disconnect]);
+  }, [connect, disconnect, sender]);
 
-  /**
-   * Mirror the store transcript into local component state.
-   *
-   * Keeping a local copy lets us decorate messages later without having to
-   * touch the store, which keeps the two layers nicely decoupled.
-   */
-  useEffect(() => {
-    setRenderedMessages(messages);
+  const conversations = useMemo(() => summarizeConversations(allMessages), [allMessages]);
+  const activeConversation = conversations.find(({ id }) => id === activeConversationId);
+  const messages = allMessages.filter((message) =>
+    message.conversationId === activeConversationId,
+  );
+
+  useLayoutEffect(() => {
+    const viewport = messageViewport.current;
+    if (!viewport) return;
+
+    viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
-  /**
-   * Keep the transcript pinned to the newest message.
-   */
-  useEffect(() => {
-    setTimeout(() => {
-      messageViewport.current?.scrollTo({
-        top: messageViewport.current.scrollHeight,
-        behavior: 'smooth',
-      });
-    }, SCROLL_SETTLE_DELAY);
-  }, [renderedMessages]);
-
-  /**
-   * Handles the compose form submission.
-   *
-   * @param event - The React form submission event.
-   */
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    // Trim the draft so we never send pure whitespace.
     const body = draft.trim();
+    if (!body || isSending) return;
 
-    // Guard against empty submissions.
-    if (!body) return;
-
-    // Clear the compose box immediately for a snappy, optimistic feel.
     setDraft('');
-
-    // Hand the message off to the engagement pipeline.
-    send(body, sender);
+    sendMessage(body, sender);
   }
+
+  const isConnected = status === 'connected';
+  const canCompose = isConnected && (sender === 'student' || Boolean(activeConversation));
 
   return (
     <section className={clsx('chat-shell', compact && 'chat-shell-compact')} aria-label="Orientation mentor chat">
-      {/* ---------------------------------------------------------------- */}
-      {/* HEADER                                                           */}
-      {/* ---------------------------------------------------------------- */}
       <header className="chat-header">
-        <div className="chat-avatar">AT</div>
+        <div className="chat-avatar" aria-hidden="true">AT</div>
         <div>
-          <strong>{sender === 'mentor' ? 'Student conversation' : 'A-Team mentor'}</strong>
-          {/* The bridge is always available, so we can render this statically. */}
-          <span className="connection-connected"><i /> Live connection</span>
+          <strong>{sender === 'mentor' ? activeConversation?.label ?? 'Select a conversation' : 'A-Team mentor'}</strong>
+          <span className={`connection-${status}`}><i aria-hidden="true" /> {STATUS_LABEL[status]}</span>
         </div>
         <ShieldCheck aria-label="University contact" size={18} />
       </header>
 
-      {/* ---------------------------------------------------------------- */}
-      {/* TRANSCRIPT                                                       */}
-      {/* ---------------------------------------------------------------- */}
       <div className="chat-messages" ref={messageViewport} aria-live="polite">
-        {renderedMessages.length === 0 ? (
+        {sender === 'mentor' && !activeConversation ? (
           <div className="chat-welcome">
-            <span>AT</span>
-            <strong>{sender === 'mentor' ? 'No messages yet' : 'Hi! We’re here to help.'}</strong>
-            <p>{sender === 'mentor' ? 'Student questions will appear here.' : 'Ask about orientation, campus, classes, or finding your way around.'}</p>
+            <span aria-hidden="true">AT</span>
+            <strong>No conversation selected</strong>
+            <p>Choose a student from the conversation list to read their history and reply.</p>
           </div>
-        ) : renderedMessages.map((message, index) => {
-          // Determine whether this bubble belongs to the current persona.
-          const isMine = message.sender == sender;
-
-          return (
-            <div className={clsx('chat-message-row', isMine && 'mine')} key={index}>
-              <div className="chat-bubble">
-                {/*
-                  * The body has already been run through our sanitizer, so it
-                  * is safe to render as rich content here. This lets students
-                  * share formatted study notes with each other.
-                  */}
-                <p dangerouslySetInnerHTML={{ __html: sanitizeMessageBodyForRichPresentation(message.body) }} />
-                <time dateTime={message.createdAt}>{dayjs(message.createdAt).format('h:mm A')}</time>
-              </div>
+        ) : status === 'disconnected' && messages.length === 0 ? (
+          <div className="chat-welcome">
+            <span aria-hidden="true">AT</span>
+            <strong>Live chat is offline</strong>
+            <p>Messages only appear while this page is connected.</p>
+            <button className="chat-reconnect" onClick={reconnect}>Reconnect</button>
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="chat-welcome">
+            <span aria-hidden="true">AT</span>
+            <strong>{sender === 'mentor' ? 'No messages yet' : 'Hi! This chat is just for you.'}</strong>
+            <p>{sender === 'mentor' ? 'This student’s messages will appear here.' : 'Ask about orientation, campus, classes, or finding your way around.'}</p>
+          </div>
+        ) : messages.map((message) => (
+          <div className={clsx('chat-message-row', message.sender === sender && 'mine')} key={message.id}>
+            <div className="chat-bubble">
+              <p>{message.body}</p>
+              <time dateTime={message.createdAt}>{dayjs(message.createdAt).format('h:mm A')}</time>
             </div>
-          );
-        })}
+          </div>
+        ))}
+        {error && <p className="chat-error" role="alert">{error}</p>}
       </div>
 
-      {/* ---------------------------------------------------------------- */}
-      {/* COMPOSE                                                          */}
-      {/* ---------------------------------------------------------------- */}
       <form className="chat-compose" onSubmit={handleSubmit}>
         <label className="sr-only" htmlFor={`chat-message-${sender}`}>Type a message</label>
         <textarea
@@ -163,11 +118,14 @@ export function OrientationChat({ sender, compact = false }: OrientationChatProp
               event.currentTarget.form?.requestSubmit();
             }
           }}
-          maxLength={LEGACY_MAXIMUM_CHARACTER_COUNT}
-          placeholder={sender === 'mentor' ? 'Reply to the student…' : 'Message an A-Team mentor…'}
+          maxLength={MAX_MESSAGE_LENGTH}
+          placeholder={!isConnected ? 'Waiting for the connection…' : sender === 'mentor' && !activeConversation ? 'Select a student to reply…' : sender === 'mentor' ? `Reply to ${activeConversation?.label}…` : 'Message an A-Team mentor…'}
           rows={1}
+          disabled={!canCompose}
         />
-        <button type="submit" disabled={!draft.trim() || isSending} aria-label="Send message"><Send size={17} /></button>
+        <button type="submit" disabled={!draft.trim() || isSending || !canCompose} aria-label="Send message">
+          <Send size={17} />
+        </button>
       </form>
     </section>
   );
