@@ -100,7 +100,7 @@ npm run start
 
 Aggie Launch is built on a modern, layered architecture that cleanly separates presentation, domain logic, and transport concerns. This separation of concerns is crucial for long-term maintainability and dramatically reduces the cognitive load on future contributors.
 
-> 📐 For the full treatment — topology, layer reference, message lifecycle, decision records, and module reference — see **[ARCHITECTURE.MD](ARCHITECTURE.MD)**.
+>  For the full treatment — topology, layer reference, message lifecycle, decision records, and module reference — see **[ARCHITECTURE.MD](ARCHITECTURE.MD)**.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
