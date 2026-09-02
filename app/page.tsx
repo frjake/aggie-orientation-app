@@ -80,8 +80,8 @@ const VALUE_PILLARS = [
  * and are verified against official university enrollment data.
  */
 const COMMUNITY_IMPACT_STATISTICS = [
-  ['47,000+', 'AGGIES ON CAMPUS'],
-  ['8', 'DAYS OF ORIENTATION'],
+  ['20,000+', 'AGGIES ON CAMPUS'],
+  ['6', 'DAYS OF ORIENTATION'],
   ['98%', 'OF STUDENTS AGREE'],
 ];
 

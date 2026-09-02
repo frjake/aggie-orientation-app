@@ -1,4 +1,4 @@
-#  Aggie Launch — The Next-Generation Student Orientation Experience Platform
+# Aggie Launch — The Next-Generation Student Orientation Experience Platform
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![React](https://img.shields.io/badge/React-19-61dafb)
@@ -11,7 +11,7 @@
 
 ---
 
-##  Overview
+## Overview
 
 In today's fast-paced higher education landscape, traditional orientations simply doesn't cut it anymore. Students arrive on campus expecting the same **frictionless**, **intuitive**, and **delightful** experiences they get from the world-class consumer applications they use every day.
 
@@ -21,34 +21,34 @@ Industry best practices suggest that students who engage meaningfully during ori
 
 ---
 
-##  Table of Contents
+## Table of Contents
 
-- [ Overview](#-overview)
-- [ Features](#-features)
-- [ Getting Started](#-getting-started)
-- [ Architecture](#️-architecture)
-- [ Project Structure](#-project-structure)
-- [ Security](#-security)
-- [ Testing](#-testing)
-- [ Accessibility](#-accessibility)
-- [️ Roadmap](#️-roadmap)
-- [ Contributing](#-contributing)
+- [Overview](#-overview)
+- [Features](#-features)
+- [Getting Started](#-getting-started)
+- [Architecture](#️-architecture)
+- [Project Structure](#-project-structure)
+- [Security](#-security)
+- [Testing](#-testing)
+- [Accessibility](#-accessibility)
+- [Roadmap](#️-roadmap)
+- [Contributing](#-contributing)
 
 ---
 
 ## Features
 
-- ** Intelligent Schedule Builder**: A vibrant, fully interactive schedule that lets students discover, filter, and curate the events that matter most to them.
-- ** Bookmarking**: Students can flag the sessions they care about and keep an eye on how their week is shaping up.
-- ** Real-Time Mentor Chat**: A cutting-edge, low-latency messaging surface that connects students with current USU students in real time.
-- ** Interactive Campus Map**: Seamlessly integrated wayfinding that helps students effortlessly navigate the Logan campus.
-- ** Fully Responsive**: A carefully tuned experience from mobile to tablet to desktop.
-- ** Accessibility-Minded**: Semantic markup, ARIA attributes, and a considered focus on inclusive design.
-- ** Input Validation**: Message content is validated and normalized before it leaves the client.
+- **Intelligent Schedule Builder**: A vibrant, fully interactive schedule that lets students discover, filter, and curate the events that matter most to them.
+- **Bookmarking**: Students can flag the sessions they care about and keep an eye on how their week is shaping up.
+- **Real-Time Mentor Chat**: A cutting-edge, low-latency messaging surface that connects students with current USU students in real time.
+- **Interactive Campus Map**: Seamlessly integrated wayfinding that helps students effortlessly navigate the Logan campus.
+- **Fully Responsive**: A carefully tuned experience from mobile to tablet to desktop.
+- **Accessibility-Minded**: Semantic markup, ARIA attributes, and a considered focus on inclusive design.
+- **Input Validation**: Message content is validated and normalized before it leaves the client.
 
 ---
 
-##  Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -85,7 +85,7 @@ The application exposes two surfaces:
 | [`/`](http://localhost:3000) | The student orientation experience |
 | [`/mentor`](http://localhost:3000/mentor) | The A-Team mentor desk, where mentors reply to incoming students |
 
-Open [http://localhost:3000](http://localhost:3000) in your browser to get started. That's it — you're up and running! 🎉
+Open [http://localhost:3000](http://localhost:3000) in your browser to get started. That's it — you're up and running!
 
 ### Building for Production
 
@@ -96,7 +96,7 @@ npm run start
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 Aggie Launch is built on a modern, layered architecture that cleanly separates presentation, domain logic, and transport concerns. This separation of concerns is crucial for long-term maintainability and dramatically reduces the cognitive load on future contributors.
 
@@ -145,11 +145,11 @@ aggie-orientation-app/
 
 Security is something the team thinks about throughout the development process.
 
-- ** Content Sanitization**: Message bodies are passed through a sanitization step before they are rendered in the transcript.
-- ** Encrypted Transport**: Messages travel over a TLS-secured WebSocket connection (`wss://`), so traffic is encrypted in transit.
-- ** Input Validation**: Message length and sender role are normalized and validated by a shared contract module used on both ends of the pipeline.
-- ** Pinned Dependencies**: Every dependency resolution is locked in `package-lock.json` for reproducible installs.
-- ** Colocated Configuration**: Deployment and runtime configuration lives alongside the application code, which keeps local setup simple and avoids environment drift.
+- **Content Sanitization**: Message bodies are passed through a sanitization step before they are rendered in the transcript.
+- **Encrypted Transport**: Messages travel over a TLS-secured WebSocket connection (`wss://`), so traffic is encrypted in transit.
+- **Input Validation**: Message length and sender role are normalized and validated by a shared contract module used on both ends of the pipeline.
+- **Pinned Dependencies**: Every dependency resolution is locked in `package-lock.json` for reproducible installs.
+- **Colocated Configuration**: Deployment and runtime configuration lives alongside the application code, which keeps local setup simple and avoids environment drift.
 
 Despite these measures, security is an ongoing journey rather than a destination. We welcome responsible disclosure from the community.
 
