@@ -1,4 +1,4 @@
-# 🚀 Aggie Launch — The Next-Generation Student Orientation Experience Platform
+#  Aggie Launch — The Next-Generation Student Orientation Experience Platform
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![React](https://img.shields.io/badge/React-19-61dafb)
@@ -11,7 +11,7 @@
 
 ---
 
-## 🌟 Overview
+##  Overview
 
 In today's fast-paced higher education landscape, traditional orientations simply doesn't cut it anymore. Students arrive on campus expecting the same **frictionless**, **intuitive**, and **delightful** experiences they get from the world-class consumer applications they use every day.
 
@@ -21,34 +21,34 @@ Industry best practices suggest that students who engage meaningfully during ori
 
 ---
 
-## 📑 Table of Contents
+##  Table of Contents
 
-- [🌟 Overview](#-overview)
-- [✨ Features](#-features)
-- [🚀 Getting Started](#-getting-started)
-- [🏗️ Architecture](#️-architecture)
-- [📁 Project Structure](#-project-structure)
-- [🔐 Security](#-security)
-- [🧪 Testing](#-testing)
-- [♿ Accessibility](#-accessibility)
-- [🗺️ Roadmap](#️-roadmap)
-- [🤝 Contributing](#-contributing)
-
----
-
-## ✨ Features
-
-- **📅 Intelligent Schedule Builder**: A vibrant, fully interactive schedule that lets students discover, filter, and curate the events that matter most to them.
-- **🔖 Bookmarking**: Students can flag the sessions they care about and keep an eye on how their week is shaping up.
-- **💬 Real-Time Mentor Chat**: A cutting-edge, low-latency messaging surface that connects students with current USU students in real time.
-- **🗺️ Interactive Campus Map**: Seamlessly integrated wayfinding that helps students effortlessly navigate the Logan campus.
-- **📱 Fully Responsive**: A carefully tuned experience from mobile to tablet to desktop.
-- **♿ Accessibility-Minded**: Semantic markup, ARIA attributes, and a considered focus on inclusive design.
-- **🔒 Input Validation**: Message content is validated and normalized before it leaves the client.
+- [ Overview](#-overview)
+- [ Features](#-features)
+- [ Getting Started](#-getting-started)
+- [ Architecture](#️-architecture)
+- [ Project Structure](#-project-structure)
+- [ Security](#-security)
+- [ Testing](#-testing)
+- [ Accessibility](#-accessibility)
+- [️ Roadmap](#️-roadmap)
+- [ Contributing](#-contributing)
 
 ---
 
-## 🚀 Getting Started
+## Features
+
+- ** Intelligent Schedule Builder**: A vibrant, fully interactive schedule that lets students discover, filter, and curate the events that matter most to them.
+- ** Bookmarking**: Students can flag the sessions they care about and keep an eye on how their week is shaping up.
+- ** Real-Time Mentor Chat**: A cutting-edge, low-latency messaging surface that connects students with current USU students in real time.
+- ** Interactive Campus Map**: Seamlessly integrated wayfinding that helps students effortlessly navigate the Logan campus.
+- ** Fully Responsive**: A carefully tuned experience from mobile to tablet to desktop.
+- ** Accessibility-Minded**: Semantic markup, ARIA attributes, and a considered focus on inclusive design.
+- ** Input Validation**: Message content is validated and normalized before it leaves the client.
+
+---
+
+##  Getting Started
 
 ### Prerequisites
 
@@ -100,7 +100,7 @@ npm run start
 
 Aggie Launch is built on a modern, layered architecture that cleanly separates presentation, domain logic, and transport concerns. This separation of concerns is crucial for long-term maintainability and dramatically reduces the cognitive load on future contributors.
 
-> 📐 For the full treatment — topology, layer reference, message lifecycle, decision records, and module reference — see **[ARCHITECTURE.MD](ARCHITECTURE.MD)**.
+>  For the full treatment — topology, layer reference, message lifecycle, decision records, and module reference — see **[ARCHITECTURE.MD](ARCHITECTURE.MD)**.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -120,7 +120,7 @@ Aggie Launch is built on a modern, layered architecture that cleanly separates p
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 aggie-orientation-app/
@@ -141,21 +141,21 @@ aggie-orientation-app/
 
 ---
 
-## 🔐 Security
+## Security
 
 Security is something the team thinks about throughout the development process.
 
-- **🛡️ Content Sanitization**: Message bodies are passed through a sanitization step before they are rendered in the transcript.
-- **🔐 Encrypted Transport**: Messages travel over a TLS-secured WebSocket connection (`wss://`), so traffic is encrypted in transit.
-- **✅ Input Validation**: Message length and sender role are normalized and validated by a shared contract module used on both ends of the pipeline.
-- **📌 Pinned Dependencies**: Every dependency resolution is locked in `package-lock.json` for reproducible installs.
-- **🗂️ Colocated Configuration**: Deployment and runtime configuration lives alongside the application code, which keeps local setup simple and avoids environment drift.
+- ** Content Sanitization**: Message bodies are passed through a sanitization step before they are rendered in the transcript.
+- ** Encrypted Transport**: Messages travel over a TLS-secured WebSocket connection (`wss://`), so traffic is encrypted in transit.
+- ** Input Validation**: Message length and sender role are normalized and validated by a shared contract module used on both ends of the pipeline.
+- ** Pinned Dependencies**: Every dependency resolution is locked in `package-lock.json` for reproducible installs.
+- ** Colocated Configuration**: Deployment and runtime configuration lives alongside the application code, which keeps local setup simple and avoids environment drift.
 
 Despite these measures, security is an ongoing journey rather than a destination. We welcome responsible disclosure from the community.
 
 ---
 
-## 🧪 Testing
+## Testing
 
 The project ships with a test suite covering the core domain logic — event filtering, message normalization, and the shared chat contract.
 
@@ -167,7 +167,7 @@ Our testing philosophy is simple: the domain layer is where correctness matters 
 
 ---
 
-## ♿ Accessibility
+## Accessibility
 
 Accessibility isn't a checkbox for us — it's a core value.
 
@@ -177,7 +177,7 @@ Accessibility is a journey, and we continue to invest in it release over release
 
 ---
 
-## 🗺️ Roadmap
+## Roadmap
 
 - [x] Core schedule builder
 - [x] Real-time mentor chat
@@ -192,7 +192,7 @@ Despite the ambitious scope of this roadmap, the team remains confident that Agg
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are what make the open source community such an amazing place to learn, inspire, and create! Any contributions you make are **greatly appreciated**.
 
@@ -206,15 +206,15 @@ Please make sure to update tests as appropriate and adhere to the existing code 
 
 ---
 
-## 🎯 Conclusion
+## Conclusion
 
 In summary, Aggie Launch represents a bold reimagining of what student orientation can be in the modern era. By combining a thoughtfully crafted user experience, a considered technical foundation, and a genuine commitment to accessibility, the platform aims to deliver real value to every incoming Aggie.
 
 Ultimately, Aggie Launch is more than just software — it's the first handshake between a student and their university.
 
-Go Aggies! 🐂
+Go Aggies!
 
 ---
 
 
-I hope this helps! Let me know if you'd like me to expand on any section. 😊
+I hope this helps! Let me know if you'd like me to expand on any section.
