@@ -71,7 +71,7 @@ export function ScheduleSection({ saved, onToggleSaved, onSelectEvent }: Schedul
       </div>
 
       <div className="event-controls">
-        <label className="search-box"><Search size={17} /><span className="sr-only">Search events</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search events or locations" /></label>
+        <label className="search-box"><Search size={17} /><span className="sr-only">Search events</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search events, locations, or times" /></label>
         <div className="filter-row">
           {CATEGORY_FILTERS.map(({ value, label }) => (
             <button key={value} className={category === value ? 'active' : ''} onClick={() => setCategory(value)} aria-pressed={category === value}>{label}</button>

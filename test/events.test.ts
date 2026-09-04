@@ -22,6 +22,11 @@ test('search is case-insensitive and includes locations', () => {
   assert.deepEqual(results.map((event) => event.id), ['true-aggie', 'luminary']);
 });
 
+test('search matches event start times', () => {
+  assert.deepEqual(filterEvents(orientationEvents, '9:00 AM', 'all').map((event) => event.id), ['aggie-welcome']);
+  assert.deepEqual(filterEvents(orientationEvents, '8:30 pm', 'all').map((event) => event.id), ['luminary']);
+});
+
 test('search and category filters compose', () => {
   const results = filterEvents(orientationEvents, 'quad', 'food');
   assert.deepEqual(results.map((event) => event.id), ['lunch-quad']);

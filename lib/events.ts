@@ -65,7 +65,7 @@ export function filterEvents(events: OrientationEvent[], query: string, category
     if (category !== 'all' && event.category !== category) return false;
     if (!normalizedQuery) return true;
 
-    const searchable = `${event.title} ${event.place} ${event.description}`.toLowerCase();
+    const searchable = `${event.title} ${event.place} ${event.time} ${event.description}`.toLowerCase();
     return searchable.includes(normalizedQuery);
   });
 }
