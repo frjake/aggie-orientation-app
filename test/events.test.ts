@@ -1,6 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { filterEvents, filterEventsByDate, orientationEvents, savedSummary } from '../lib/events.ts';
+import {
+  eventIsoDate,
+  filterEvents,
+  filterEventsByDate,
+  findOrientationEventById,
+  orientationEvents,
+  savedSummary,
+} from '../lib/events.ts';
+
+const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
 test('filters orientation events by category', () => {
   const results = filterEvents(orientationEvents, '', 'traditions');
@@ -21,6 +30,23 @@ test('search and category filters compose', () => {
 test('date selector filters the schedule and can return to the full week', () => {
   assert.deepEqual(filterEventsByDate(orientationEvents, '29').map((event) => event.id), ['luminary']);
   assert.equal(filterEventsByDate(orientationEvents, 'all').length, orientationEvents.length);
+});
+
+test('looks events up by id', () => {
+  assert.equal(findOrientationEventById('club-rush')?.title, 'Find Your People: Club Rush');
+  assert.equal(findOrientationEventById('nope'), undefined);
+});
+
+test('every event day label matches the date it resolves to', () => {
+  for (const event of orientationEvents) {
+    const derived = WEEKDAYS[new Date(`${eventIsoDate(event)}T12:00:00Z`).getUTCDay()];
+    assert.equal(derived, event.day, `${event.id} is labelled ${event.day} but resolves to ${derived}`);
+  }
+});
+
+test('event ids are unique', () => {
+  const ids = orientationEvents.map((event) => event.id);
+  assert.equal(new Set(ids).size, ids.length);
 });
 
 test('saved summary uses the correct singular and empty states', () => {

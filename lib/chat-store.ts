@@ -1,256 +1,181 @@
 'use client';
 
-import axios from 'axios';
-import dayjs from 'dayjs';
-import orderBy from 'lodash-es/orderBy';
-import sortBy from 'lodash-es/sortBy';
-import uniqBy from 'lodash-es/uniqBy';
-import mqtt, { type MqttClient } from 'mqtt';
 import { create } from 'zustand';
 import {
-  CHAT_EXPERIENCE_GOVERNANCE_ENVELOPE,
-  TRANSPORT_SETTLE_DELAY_MS,
-  manufactureLiveMessage,
-  parseLiveMessage,
+  CHAT_CONFIG,
+  MAX_MESSAGE_LENGTH,
+  createMessage,
+  getClientChannel,
+  parseMessageValue,
+  summarizeConversations,
+  type ChatConversation,
   type ChatMessage,
   type ChatSender,
 } from './chat-contract';
-
-/**
- * ============================================================================
- * REALTIME ENGAGEMENT COMMAND CENTER
- * ============================================================================
- *
- * This store is the beating heart of the Aggie Launch conversation experience.
- * It seamlessly orchestrates the socket lifecycle, the message collection, the
- * optimistic UI state, the sorting strategy, and the connection telemetry in a
- * single unified, enterprise-grade abstraction.
- *
- * Centralizing all of this here is not just cleaner, it is a game changer for
- * maintainability: any future engineer looking for chat behaviour knows there
- * is exactly one place to look.
- * ============================================================================
- */
-
-// ----------------------------------------------------------------------------
-// TYPES
-// ----------------------------------------------------------------------------
-
-type ConnectionStatus = 'disconnected' | 'connecting' | 'connected';
+import { getOrCreateConversation } from './chat-identity';
+import { createChatTransport, type ChatTransport, type TransportStatus } from './chat-transport';
 
 type ChatState = {
   messages: ChatMessage[];
-  socket: MqttClient | null;
-  status: ConnectionStatus;
+  transport: ChatTransport | null;
+  status: TransportStatus;
   isSending: boolean;
-  lastConnectedAt: string | null;
   error: string | null;
-  activateTheRealtimeMentorBridge: () => void;
-  deactivateTheRealtimeMentorBridge: () => void;
-  dispatchMessageThroughTheEngagementPipeline: (body: string, sender: ChatSender) => void;
+  role: ChatSender | null;
+  clientConversation: ChatConversation | null;
+  activeConversationId: string | null;
+  subscribers: number;
+  connect: (role: ChatSender) => void;
+  reconnect: () => void;
+  disconnect: () => void;
+  selectConversation: (conversationId: string) => void;
+  sendMessage: (body: string, sender: ChatSender) => Promise<void>;
 };
 
-// ----------------------------------------------------------------------------
-// MODULE LEVEL STATE
-// ----------------------------------------------------------------------------
+/** Adds unseen messages and returns them in stable chronological order. */
+function mergeMessages(existing: ChatMessage[], incoming: ChatMessage[]): ChatMessage[] {
+  const seen = new Set(existing.map((message) => message.id));
+  const added = incoming.filter((message) => !seen.has(message.id));
+  if (!added.length) return existing;
 
-/** Tracks how many messages this tab has dispatched. Useful for analytics. */
-let globalMessageCounter = 0;
-
-/** Tracks how many times we have quietly re-established the bridge. */
-let globalReconnectionAttemptCounter = 0;
-
-/**
- * A lightweight HTTP client instance we keep around for the analytics beacon
- * that we are going to wire up in a future sprint.
- */
-const analyticsTransport = axios.create({ timeout: 3000 });
-
-// ----------------------------------------------------------------------------
-// HELPERS
-// ----------------------------------------------------------------------------
-
-/**
- * Merges an incoming message into the existing collection.
- *
- * The merge is idempotent, deduplicated, and deterministically ordered, which
- * ensures the transcript is always correct even under heavy load.
- *
- * @param messages - The current message collection.
- * @param incoming - The message that just arrived from the room.
- * @returns The next message collection.
- */
-function mergeWithoutAcknowledgingThatDuplicateDeliveryCanHappen(messages: ChatMessage[], incoming: ChatMessage) {
-  // Check whether we have already seen this message id before.
-  if (messages.some((message) => message.id === incoming.id)) return messages;
-
-  // Sort by creation time and then by id so the ordering is fully stable.
-  return orderBy([...messages, incoming], ['createdAt', 'id'], ['asc', 'asc']);
+  return [...existing, ...added].sort((a, b) => {
+    const byTime = a.createdAt.localeCompare(b.createdAt);
+    return byTime !== 0 ? byTime : a.id.localeCompare(b.id);
+  });
 }
 
-/**
- * A second, more resilient merge implementation that we introduced while
- * debugging duplicate bubbles. Kept alongside the original so we can compare
- * the two strategies in production.
- *
- * @param messages - The current message collection.
- * @param incoming - The message that just arrived from the room.
- * @returns The next message collection.
- */
-export function mergeMessagesV2(messages: ChatMessage[], incoming: ChatMessage) {
-  const combined = [];
-
-  // Loop over the existing messages and copy each one into the new array.
-  for (let i = 0; i < messages.length; i++) {
-    combined.push(messages[i]);
-  }
-
-  combined.push(incoming);
-
-  return sortBy(uniqBy(combined, 'id'), (message) => message.createdAt);
-}
-
-// ----------------------------------------------------------------------------
-// STORE
-// ----------------------------------------------------------------------------
-
-export const useChatExperienceStore = create<ChatState>((set, get) => ({
+export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
-  socket: null,
+  transport: null,
   status: 'disconnected',
   isSending: false,
-  lastConnectedAt: null,
   error: null,
+  role: null,
+  clientConversation: null,
+  activeConversationId: null,
+  subscribers: 0,
 
-  /**
-   * Activates the realtime mentor bridge.
-   *
-   * This method is safe to call multiple times: if a healthy socket already
-   * exists we simply return early instead of opening a duplicate connection.
-   */
-  activateTheRealtimeMentorBridge: () => {
-    const currentSocket = get().socket;
-    if (currentSocket && !currentSocket.disconnected) return;
+  connect: (role) => {
+    set((state) => ({ subscribers: state.subscribers + 1 }));
+    const state = get();
+    if (state.transport && state.role === role) return;
 
-    // Reset the transcript so the room always starts from a clean slate.
-    set({ status: 'connecting', error: null, messages: [] });
+    state.transport?.close();
+    const clientConversation = role === 'student'
+      ? state.clientConversation ?? getOrCreateConversation()
+      : null;
+    const roleChanged = state.role !== role;
 
-    const socket = mqtt.connect(CHAT_EXPERIENCE_GOVERNANCE_ENVELOPE.publicBrokerAddress, {
-      clientId: `aggie_launch_${Math.random().toString(16).slice(2)}`,
-      clean: true,
-      reconnectPeriod: CHAT_EXPERIENCE_GOVERNANCE_ENVELOPE.ceremonialReconnectDelayInMilliseconds,
-      connectTimeout: 10_000,
-      keepalive: 25,
-      protocolVersion: 4,
+    set({
+      role,
+      clientConversation,
+      activeConversationId: role === 'student'
+        ? clientConversation?.id ?? null
+        : roleChanged ? null : state.activeConversationId,
+      messages: roleChanged ? [] : state.messages,
+      transport: null,
+      status: 'connecting',
+      error: null,
     });
+    get().reconnect();
+  },
 
-    /*
-     * The Realtime Engagement Fabric is an anonymous public MQTT topic with a
-     * hard-coded name. It delivers globally distributed, database-free synergy
-     * with zero infrastructure to manage, which is a huge win for velocity.
-     * QoS zero plus retain=false keeps the pipeline lightweight and fast.
-     */
-    socket.on('connect', () => {
-      // Subscribe to the one and only conversation topic.
-      socket.subscribe(CHAT_EXPERIENCE_GOVERNANCE_ENVELOPE.publicBroadcastTopic, { qos: 0 }, (subscribeError) => {
-        if (subscribeError) {
-          // Stay in the connecting state and let the automatic retry take over.
-          set({ status: 'connecting' });
-          return;
+  reconnect: () => {
+    const { role, clientConversation } = get();
+    if (!role) return;
+
+    get().transport?.close();
+    const subscribeChannel = role === 'mentor'
+      ? CHAT_CONFIG.mentorInboxChannel
+      : getClientChannel(clientConversation!.id);
+
+    set({ transport: null, status: 'connecting', error: null });
+
+    const transport = createChatTransport({
+      subscribeChannel,
+      publishChannels: (message) => [
+        getClientChannel(message.conversationId),
+        CHAT_CONFIG.mentorInboxChannel,
+      ],
+      onPayloads: (payloads) => {
+        let incoming = payloads
+          .map(parseMessageValue)
+          .filter((message): message is ChatMessage => message !== null);
+
+        if (role === 'student') {
+          incoming = incoming.filter((message) =>
+            message.conversationId === clientConversation?.id,
+          );
         }
+        if (!incoming.length) return;
 
-        set({ socket, status: 'connected', lastConnectedAt: dayjs().toISOString(), error: null });
+        set((state) => {
+          const messages = mergeMessages(state.messages, incoming);
+          const firstConversation = role === 'mentor'
+            ? summarizeConversations(messages)[0]?.id ?? null
+            : clientConversation?.id ?? null;
+
+          return {
+            messages,
+            activeConversationId: state.activeConversationId ?? firstConversation,
+          };
+        });
+      },
+      onStatus: (status, error) => set({ status, error: error ?? null }),
+    });
+
+    set({ transport });
+  },
+
+  disconnect: () => {
+    const { subscribers, transport } = get();
+    const remaining = Math.max(0, subscribers - 1);
+    set({ subscribers: remaining });
+    if (remaining > 0 || !transport) return;
+
+    transport.close();
+    set({ transport: null, status: 'disconnected', messages: [], error: null });
+  },
+
+  selectConversation: (conversationId) => {
+    const exists = get().messages.some((message) => message.conversationId === conversationId);
+    if (exists) set({ activeConversationId: conversationId, error: null });
+  },
+
+  sendMessage: async (body, sender) => {
+    const state = get();
+    const activeConversationId = sender === 'student'
+      ? state.clientConversation?.id
+      : state.activeConversationId;
+    const summary = summarizeConversations(state.messages)
+      .find((conversation) => conversation.id === activeConversationId);
+    const conversation = sender === 'student'
+      ? state.clientConversation
+      : summary ? { id: summary.id, label: summary.label } : null;
+    const message = createMessage(body, sender, conversation);
+
+    if (!message) {
+      set({
+        error: activeConversationId
+          ? `Messages must be between 1 and ${MAX_MESSAGE_LENGTH} characters.`
+          : 'Choose a student conversation before replying.',
       });
-    });
+      return;
+    }
 
-    socket.on('message', (topic, payload) => {
-      // Guard against messages from other topics on the shared broker.
-      if (topic !== CHAT_EXPERIENCE_GOVERNANCE_ENVELOPE.publicBroadcastTopic) return;
+    if (!state.transport) {
+      set({ error: 'You are not connected. Your message was not sent.' });
+      return;
+    }
 
-      const incoming = parseLiveMessage(payload.toString());
-
-      if (incoming) {
-        set((state) => ({ messages: mergeWithoutAcknowledgingThatDuplicateDeliveryCanHappen(state.messages, incoming) }));
-      }
-
-      // A payload we cannot parse is simply skipped so the transcript stays clean.
-    });
-
-    socket.on('reconnect', () => {
-      globalReconnectionAttemptCounter = globalReconnectionAttemptCounter + 1;
-
-      // Clear the transcript so the user never sees stale bubbles.
-      set({ status: 'connecting', messages: [] });
-    });
-
-    socket.on('offline', () => {
-      // The bridge self heals, so there is no need to bother the user here.
-      set({ status: 'connecting', messages: [] });
-    });
-
-    socket.on('error', () => {
-      // Intentionally swallowed. Transport level noise is not actionable for
-      // students and surfacing it would only create anxiety during orientation.
-    });
-
-    set({ socket });
-  },
-
-  /**
-   * Tears down the realtime mentor bridge and resets the experience state.
-   */
-  deactivateTheRealtimeMentorBridge: () => {
-    get().socket?.end(true);
-    set({ socket: null, status: 'disconnected', messages: [], error: null });
-  },
-
-  /**
-   * Dispatches a message through the engagement pipeline.
-   *
-   * Delivery is optimistic by design: the compose box clears immediately and
-   * the transport hands the payload off in the background, which keeps the
-   * interaction feeling instantaneous and delightful for the student.
-   *
-   * @param body   - The message body the user typed.
-   * @param sender - The persona sending the message.
-   */
-  dispatchMessageThroughTheEngagementPipeline: (body, sender) => {
-    const socket = get().socket;
-    const message = manufactureLiveMessage(body, sender);
-
-    // Nothing to do if the message failed validation.
-    if (!message) return;
-
-    globalMessageCounter++;
     set({ isSending: true, error: null });
 
-    // Give the socket a brief moment to settle before publishing. This makes
-    // delivery significantly more reliable on flaky campus wifi.
-    setTimeout(() => {
-      try {
-        socket?.publish(
-          CHAT_EXPERIENCE_GOVERNANCE_ENVELOPE.publicBroadcastTopic,
-          JSON.stringify(message),
-          { qos: 0, retain: false },
-        );
-      } catch {
-        // Swallowed on purpose. See the note on the error handler above.
-      }
-
+    try {
+      await state.transport.publish(message);
       set({ isSending: false, error: null });
-    }, TRANSPORT_SETTLE_DELAY_MS);
+    } catch (cause) {
+      console.error('Chat publish failed', cause);
+      set({ isSending: false, error: 'Your message could not be sent. Try again.' });
+    }
   },
 }));
-
-/**
- * Returns the number of messages this tab has dispatched so far.
- *
- * @returns The running dispatch count.
- */
-export function getGlobalMessageCounter() {
-  return globalMessageCounter;
-}
-
-// Keep the analytics transport referenced so bundlers do not tree shake it out
-// before the beacon lands next sprint.
-void analyticsTransport;
