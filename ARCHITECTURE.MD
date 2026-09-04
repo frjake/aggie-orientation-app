@@ -4,8 +4,6 @@ This document describes the end-to-end technical architecture of the Aggie Launc
 experience platform: its topology, its layering strategy, its data flow, its state model, and the
 architectural decisions that underpin them.
 
-**Layered, not tangled.**
-
 ---
 
 ## 📑 Table of Contents
@@ -28,8 +26,6 @@ architectural decisions that underpin them.
 ---
 
 ## 🧭 Architectural Principles
-
-**Contracts over conventions.**
 
 Every architectural decision in this codebase traces back to a small number of load-bearing
 principles. They are not aspirations. They are constraints, and they are enforced by the shape of
@@ -59,15 +55,12 @@ The compose surface clears immediately on submit and hands the payload to the tr
 asynchronously. The interface does not block on acknowledgement. Rendering is driven by what
 arrives on the subscription, not by what was locally enqueued.
 
-**Responsive to the user, not to the network.**
-
 ### Principle IV — Typed at the boundary.
 
 TypeScript is configured in `strict` mode with `isolatedModules`. Every value crossing a module
 seam carries a declared type. Every value crossing the *network* seam is typed as `unknown` and
 narrowed by a guard before it is trusted.
 
-**Typed everywhere. Assumed nowhere.**
 
 ---
 
@@ -111,8 +104,6 @@ back-channel between them.
 
 ## ⚙️ Runtime Model
 
-**Declarative at the edges. Imperative at the core.**
-
 | Surface | Module | Boundary | Notes |
 | --- | --- | --- | --- |
 | Document shell | `app/layout.tsx` | Server Component | Font registration, metadata graph |
@@ -128,7 +119,6 @@ deliberately high for the student surface. The mentor desk renders its chrome on
 hydrates only the conversation. The student experience is client-rendered in its entirety because
 every section below the hero participates in filter state.
 
-**Boundaries are decisions, not defaults.**
 
 ---
 
@@ -169,8 +159,6 @@ MQTT 3.1.1 (`protocolVersion: 4`) carried over `wss://`. Connection parameters a
 ---
 
 ## 💬 The Messaging Subsystem
-
-**Immutable in. Ordered out.**
 
 ### Connection Parameters
 
@@ -275,8 +263,6 @@ key `aggie-launch:saved-schedule:v1` as a JSON array.
 
 ## 🔄 State Management Model
 
-**State is a stream, not a snapshot.**
-
 Three distinct state domains, three distinct mechanisms:
 
 | Domain | Mechanism | Scope | Lifetime |
@@ -299,7 +285,6 @@ subscription, and a subscription that lapsed has nothing to show.
 
 ## 🎨 Styling Architecture
 
-**Tokens over values. Cascade over configuration.**
 
 A single stylesheet, `app/globals.css`, opens with `@import 'tailwindcss'` for preflight
 normalization and a small number of utilities. Component styling itself is hand-authored CSS keyed
@@ -328,8 +313,6 @@ and `--font-geist-mono` on the `<body>` element. The base `body` rule resolves t
 
 ## 🚢 Build & Delivery Pipeline
 
-**Compile once. Deploy to the edge.**
-
 The toolchain is Vite-native rather than webpack-native. `vinext` provides Next.js App Router
 semantics on top of Vite 8, with `@vitejs/plugin-rsc` handling the React Server Components graph and
 `@vitejs/plugin-react` handling the client transform. `@cloudflare/vite-plugin` targets the
@@ -356,8 +339,6 @@ against a planned analytics beacon and is not on any current request path.
 ---
 
 ## 🧪 Testing Topology
-
-**Tested where it counts.**
 
 Two suites, executed by the Node built-in test runner with no external framework:
 
@@ -492,5 +473,3 @@ Store actions: `activateTheRealtimeMentorBridge`, `deactivateTheRealtimeMentorBr
 | **Substrate** | The broker and the WebSocket beneath it |
 
 ---
-
-**Built to evolve, not to endure.**
