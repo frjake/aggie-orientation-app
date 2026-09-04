@@ -1,8 +1,8 @@
 import { ChevronRight, Users } from 'lucide-react';
 
 const COMMUNITY_IMPACT_STATISTICS = [
-  { id: 'students', value: '47,000+', label: 'AGGIES ON CAMPUS' },
-  { id: 'days', value: '8', label: 'DAYS OF ORIENTATION' },
+  { id: 'students', value: '20,000+', label: 'AGGIES ON CAMPUS' },
+  { id: 'days', value: '6', label: 'DAYS OF ORIENTATION' },
   { id: 'agree', value: '98%', label: 'OF STUDENTS AGREE' },
 ];
 
